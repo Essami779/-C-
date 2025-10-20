@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.Sql;
+using System.Drawing.Printing;
+using System.IO;
 
 namespace Debt_system
 {
@@ -16,6 +18,11 @@ namespace Debt_system
         private DatabaseManager dbManager;
         private DataTable currentSalesData;
         private int selectedSaleID = -1;
+		// الطباعة
+		private PrintDocument printDocument;
+		private List<string> printBuffer = new List<string>();
+		private int printLineIndex = 0;
+		private PrintPreviewDialog printPreviewDialog;
 
         public system()
         {
@@ -37,6 +44,9 @@ namespace Debt_system
             // إعداد ListView
             SetupListView();
             
+			// ربط حدث تغيير التاريخ لتصفية البيانات اليومية
+			dateTime.ValueChanged += dateTime_ValueChanged;
+			
             // تحميل البيانات
             LoadAllSales();
             
@@ -45,7 +55,19 @@ namespace Debt_system
             
             // إعداد التاريخ الحالي
             dateTime.Value = DateTime.Now;
+			
+			// تهيئة مستند الطباعة ومعاينة الطباعة
+			printDocument = new PrintDocument();
+			printDocument.DocumentName = "تقReport-المبيعات";
+			printDocument.PrintPage += printDocument_PrintPage;
+			printPreviewDialog = new PrintPreviewDialog();
+			printPreviewDialog.Document = printDocument;
         }
+
+		private void dateTime_ValueChanged(object sender, EventArgs e)
+		{
+			LoadSalesByDate(dateTime.Value.Date);
+		}
 
         private void SetupListView()
         {
@@ -72,6 +94,13 @@ namespace Debt_system
             currentSalesData = dbManager.GetAllSales();
             PopulateListView(currentSalesData);
         }
+
+		private void LoadSalesByDate(DateTime selectedDate)
+		{
+			currentSalesData = dbManager.GetSalesByDate(selectedDate);
+			PopulateListView(currentSalesData);
+			UpdateTotalAmount(currentSalesData);
+		}
 
         private void PopulateListView(DataTable data)
         {
@@ -121,11 +150,32 @@ namespace Debt_system
             }
         }
 
-        private void UpdateTotalAmount()
-        {
-            decimal totalDebts = dbManager.GetTotalDebts();
-            totoalprice.Text = totalDebts.ToString("F2");
-        }
+		private void UpdateTotalAmount()
+		{
+			decimal totalDebts = dbManager.GetTotalDebts();
+			totoalprice.Text = totalDebts.ToString("F2");
+		}
+
+		private void UpdateTotalAmount(DataTable data)
+		{
+			try
+			{
+				decimal sum = 0;
+				foreach (DataRow row in data.Rows)
+				{
+					if (row["RemainingAmount"] != DBNull.Value)
+					{
+						sum += Convert.ToDecimal(row["RemainingAmount"]);
+					}
+				}
+				totoalprice.Text = sum.ToString("F2");
+			}
+			catch
+			{
+				// في حال أي خطأ غير متوقع، نعود للسلوك الافتراضي
+				UpdateTotalAmount();
+			}
+		}
 
         private void ClearInputFields()
         {
@@ -136,6 +186,8 @@ namespace Debt_system
             dicount.Clear();
 
             selectedSaleID = -1;
+			// إعادة زر الحفظ إلى وضع الإضافة
+			Save.Text = "أظافة";
         }
 
         private bool ValidateInput()
@@ -278,6 +330,9 @@ namespace Debt_system
             price.Text = selectedItem.SubItems[4].Text;
             dicount.Text = selectedItem.SubItems[5].Text;
 
+			// تغيير نص زر الحفظ إلى حفظ التعديل
+			Save.Text = "حفظ التعديل";
+
             MessageBox.Show("تم تحميل البيانات للتعديل. قم بالتعديل واضغط حفظ", "معلومات", 
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -291,15 +346,120 @@ namespace Debt_system
 
         private void print_Click(object sender, EventArgs e)
         {
-            if (listView1.Items.Count == 0)
-            {
-                MessageBox.Show("لا توجد بيانات للطباعة", "تحذير", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+			if (listView1.Items.Count == 0)
+			{
+				MessageBox.Show("لا توجد بيانات للطباعة", "تحذير", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return;
+			}
 
-            // هنا يمكن إضافة كود الطباعة
-            MessageBox.Show("ميزة الطباعة ستكون متاحة قريباً", "معلومات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			// تحضير البيانات للطباعة: المحدد فقط أو جميع الظاهرة
+			PreparePrintData();
+
+			try
+			{
+				printLineIndex = 0;
+				// عرض المعاينة قبل الطباعة
+				printPreviewDialog.Width = 1000;
+				printPreviewDialog.Height = 700;
+				printPreviewDialog.ShowIcon = true;
+				printPreviewDialog.PrintPreviewControl.Zoom = 1.0;
+				printPreviewDialog.ShowDialog();
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"خطأ أثناء المعاينة/الطباعة: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
         }
+
+		private void PreparePrintData()
+		{
+			printBuffer.Clear();
+			// عنوان التقرير
+			string title = "تقرير المبيعات";
+			string subTitle = string.Empty;
+			if (listView1.SelectedItems.Count > 0)
+			{
+				subTitle = "- عنصر محدد";
+			}
+			else
+			{
+				subTitle = "- جميع العناصر الظاهرة";
+			}
+			printBuffer.Add($"{title} {subTitle}");
+			printBuffer.Add($"التاريخ: {DateTime.Now:yyyy-MM-dd HH:mm}");
+			printBuffer.Add(new string('-', 60));
+			printBuffer.Add("ID | الاسم | الهاتف | الصنف | السعر | الخصم | الإجمالي | المدفوع | المتبقي | التاريخ");
+			printBuffer.Add(new string('-', 60));
+
+			if (listView1.SelectedItems.Count > 0)
+			{
+				AppendItemToPrint(listView1.SelectedItems[0]);
+			}
+			else
+			{
+				foreach (ListViewItem item in listView1.Items)
+				{
+					AppendItemToPrint(item);
+				}
+			}
+		}
+
+		private void AppendItemToPrint(ListViewItem item)
+		{
+			try
+			{
+				// الأعمدة مرتبة كما تمت إضافتها في PopulateListView
+				string line = string.Join(" | ", new string[]
+				{
+					item.SubItems[0].Text, // ID
+					item.SubItems[1].Text, // الاسم
+					item.SubItems[2].Text, // الهاتف
+					item.SubItems[3].Text, // الصنف
+					item.SubItems[4].Text, // السعر
+					item.SubItems[5].Text, // الخصم
+					item.SubItems[6].Text, // الإجمالي
+					item.SubItems[7].Text, // المدفوع
+					item.SubItems[8].Text, // المتبقي
+					item.SubItems[9].Text  // التاريخ
+				});
+				printBuffer.Add(line);
+			}
+			catch
+			{
+				// تجاهل السطر إن حدث خطأ في القراءة
+			}
+		}
+
+		private void printDocument_PrintPage(object sender, PrintPageEventArgs e)
+		{
+			Font headerFont = new Font("Tahoma", 10, FontStyle.Bold);
+			Font textFont = new Font("Tahoma", 9, FontStyle.Regular);
+			int lineHeight = (int)textFont.GetHeight(e.Graphics) + 6;
+			int x = e.MarginBounds.Left;
+			int y = e.MarginBounds.Top;
+			int right = e.MarginBounds.Right;
+
+			// طباعة الأسطر مع ترقيم الصفحات
+			for (int i = printLineIndex; i < printBuffer.Count; i++)
+			{
+				string line = printBuffer[i];
+				Font fontToUse = (i <= 2) ? headerFont : textFont; // أول أسطر عناوين
+				SizeF size = e.Graphics.MeasureString(line, fontToUse, right - x);
+				if (y + size.Height > e.MarginBounds.Bottom)
+				{
+					// صفحة جديدة
+					e.HasMorePages = true;
+					printLineIndex = i;
+					return;
+				}
+				e.Graphics.DrawString(line, fontToUse, Brushes.Black, new RectangleF(x, y, right - x, size.Height));
+				y += lineHeight;
+			}
+
+			// انتهت البيانات
+			e.HasMorePages = false;
+			printLineIndex = 0;
+		}
 
         private void pay_Click(object sender, EventArgs e)
         {
@@ -431,13 +591,122 @@ namespace Debt_system
 
         private void senddata_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("ميزة إرسال البيانات ستكون متاحة قريباً", "معلومات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			try
+			{
+				string dataDir = (AppDomain.CurrentDomain.GetData("DataDirectory") as string) ?? AppDomain.CurrentDomain.BaseDirectory;
+				string mdfPath = Path.Combine(dataDir, "Database.mdf");
+				string ldfPath = Path.Combine(dataDir, "Database_log.ldf");
+
+				if (!File.Exists(mdfPath))
+				{
+					MessageBox.Show("لم يتم العثور على ملف قاعدة البيانات (Database.mdf)", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					return;
+				}
+
+				using (var folderDlg = new FolderBrowserDialog())
+				{
+					folderDlg.Description = "اختر مجلد حفظ نسخة قاعدة البيانات";
+					var result = folderDlg.ShowDialog();
+					if (result != DialogResult.OK)
+						return;
+
+					string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+					string destMdf = Path.Combine(folderDlg.SelectedPath, $"Database_{timestamp}.mdf");
+					string destLdf = Path.Combine(folderDlg.SelectedPath, $"Database_log_{timestamp}.ldf");
+
+					File.Copy(mdfPath, destMdf, true);
+					if (File.Exists(ldfPath))
+					{
+						File.Copy(ldfPath, destLdf, true);
+					}
+
+					MessageBox.Show($"تم تصدير قاعدة البيانات بنجاح إلى:\n{destMdf}", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"خطأ أثناء التصدير: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
         }
 
         private void resevdata_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("ميزة استرداد البيانات ستكون متاحة قريباً", "معلومات", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			try
+			{
+				using (var openDlg = new OpenFileDialog())
+				{
+					openDlg.Title = "اختر ملف قاعدة البيانات (MDF) للاسترداد";
+					openDlg.Filter = "Database MDF (*.mdf)|*.mdf";
+					var result = openDlg.ShowDialog();
+					if (result != DialogResult.OK)
+						return;
+
+					string backupMdf = openDlg.FileName;
+					// محاولة إيجاد ملف السجل بجوار الملف المحدد
+					string backupLdf = Path.Combine(Path.GetDirectoryName(backupMdf), Path.GetFileNameWithoutExtension(backupMdf) + "_log.ldf");
+
+					// عرض معاينة البيانات (عدد السجلات في الجداول الرئيسية)
+					string preview = GetDatabasePreview(backupMdf);
+					DialogResult confirm = MessageBox.Show($"سيتم استرداد قاعدة البيانات من الملف التالي:\n{backupMdf}\n\nمعاينة:\n{preview}\n\nهل تريد المتابعة؟", "تأكيد الاسترداد", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2, MessageBoxOptions.RightAlign);
+					if (confirm != DialogResult.Yes)
+						return;
+
+					// نسخ الملفات إلى مجلد بيانات التطبيق
+					string dataDir = (AppDomain.CurrentDomain.GetData("DataDirectory") as string) ?? AppDomain.CurrentDomain.BaseDirectory;
+					string targetMdf = Path.Combine(dataDir, "Database.mdf");
+					string targetLdf = Path.Combine(dataDir, "Database_log.ldf");
+
+					// محاولة إغلاق أي اتصالات عبر GC/Pooling (إجرائي)
+					GC.Collect();
+					GC.WaitForPendingFinalizers();
+
+					File.Copy(backupMdf, targetMdf, true);
+					if (File.Exists(backupLdf))
+					{
+						File.Copy(backupLdf, targetLdf, true);
+					}
+
+					MessageBox.Show("تم استرداد قاعدة البيانات بنجاح.", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					// إعادة تحميل البيانات في الواجهة
+					LoadAllSales();
+					UpdateTotalAmount();
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"خطأ أثناء الاسترداد: {ex.Message}", "خطأ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
         }
+
+		private string GetDatabasePreview(string mdfPath)
+		{
+			try
+			{
+				string tempConnString = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={mdfPath};Integrated Security=True;Connect Timeout=30";
+				using (var conn = new System.Data.SqlClient.SqlConnection(tempConnString))
+				{
+					conn.Open();
+					int customers = ExecuteScalarCount(conn, "SELECT COUNT(*) FROM Customers");
+					int products = ExecuteScalarCount(conn, "SELECT COUNT(*) FROM Products");
+					int sales = ExecuteScalarCount(conn, "SELECT COUNT(*) FROM Sales");
+					int payments = ExecuteScalarCount(conn, "SELECT COUNT(*) FROM Payments");
+					return $"العملاء: {customers}\nالمنتجات: {products}\nالمبيعات: {sales}\nالمدفوعات: {payments}";
+				}
+			}
+			catch (Exception ex)
+			{
+				return $"تعذر قراءة المعاينة: {ex.Message}";
+			}
+		}
+
+		private int ExecuteScalarCount(System.Data.SqlClient.SqlConnection conn, string query)
+		{
+			using (var cmd = new System.Data.SqlClient.SqlCommand(query, conn))
+			{
+				object val = cmd.ExecuteScalar();
+				return (val == null || val == DBNull.Value) ? 0 : Convert.ToInt32(val);
+			}
+		}
 
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -450,6 +719,11 @@ namespace Debt_system
         }
 
         private void groupBox3_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void dateTime_ValueChanged_1(object sender, EventArgs e)
         {
 
         }

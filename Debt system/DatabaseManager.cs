@@ -379,6 +379,25 @@ namespace Debt_system
             return ExecuteQuery(query);
         }
 
+        // الحصول على المبيعات ليوم محدد فقط
+        public DataTable GetSalesByDate(DateTime date)
+        {
+            string query = @"SELECT s.SaleID, c.CustomerName, c.Phone, p.ProductName,
+                           s.UnitPrice, s.Discount, s.TotalAmount, s.PaidAmount,
+                           s.RemainingAmount, s.SaleDate, s.Notes
+                           FROM Sales s
+                           INNER JOIN Customers c ON s.CustomerID = c.CustomerID
+                           INNER JOIN Products p ON s.ProductID = p.ProductID
+                           WHERE CAST(s.SaleDate AS date) = @Date
+                           ORDER BY s.SaleDate DESC";
+
+            SqlParameter[] parameters = {
+                new SqlParameter("@Date", date.Date)
+            };
+
+            return ExecuteQuery(query, parameters);
+        }
+
         // البحث في المبيعات
         public DataTable SearchSales(string searchTerm)
         {
