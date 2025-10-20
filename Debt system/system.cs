@@ -603,25 +603,23 @@ namespace Debt_system
 					return;
 				}
 
-				using (var folderDlg = new FolderBrowserDialog())
+				// تحديد مجلد المشروع (مستويان أعلى من مجلد التشغيل: bin/Debug أو bin/Release)
+				string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+				string projectRoot = Path.GetFullPath(Path.Combine(baseDir, @"..", @".."));
+				string backupDir = Path.Combine(projectRoot, "Backup");
+				Directory.CreateDirectory(backupDir);
+
+				string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+				string destMdf = Path.Combine(backupDir, $"Database_{timestamp}.mdf");
+				string destLdf = Path.Combine(backupDir, $"Database_log_{timestamp}.ldf");
+
+				File.Copy(mdfPath, destMdf, true);
+				if (File.Exists(ldfPath))
 				{
-					folderDlg.Description = "اختر مجلد حفظ نسخة قاعدة البيانات";
-					var result = folderDlg.ShowDialog();
-					if (result != DialogResult.OK)
-						return;
-
-					string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-					string destMdf = Path.Combine(folderDlg.SelectedPath, $"Database_{timestamp}.mdf");
-					string destLdf = Path.Combine(folderDlg.SelectedPath, $"Database_log_{timestamp}.ldf");
-
-					File.Copy(mdfPath, destMdf, true);
-					if (File.Exists(ldfPath))
-					{
-						File.Copy(ldfPath, destLdf, true);
-					}
-
-					MessageBox.Show($"تم تصدير قاعدة البيانات بنجاح إلى:\n{destMdf}", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					File.Copy(ldfPath, destLdf, true);
 				}
+
+				MessageBox.Show($"تم حفظ النسخة الاحتياطية في مجلد المشروع:\n{destMdf}", "نجاح", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			}
 			catch (Exception ex)
 			{
