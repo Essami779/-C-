@@ -1,0 +1,23 @@
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\bin\Debug\Debt system.exe.config
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\bin\Debug\Debt system.exe
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\bin\Debug\Debt system.pdb
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\obj\Debug\Debt system.csprojResolveAssemblyReference.cache
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\obj\Debug\Debt_system.Form1.resources
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\obj\Debug\Debt_system.Properties.Resources.resources
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\obj\Debug\Debt_system.system.resources
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\obj\Debug\Debt system.csproj.GenerateResource.Cache
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\obj\Debug\Debt system.exe
+c:\users\essam\documents\visual studio 2015\Projects\Debt system\Debt system\obj\Debug\Debt system.pdb
+D:\All My Project\Debt system\Debt system\bin\Debug\Debt system.exe.config
+D:\All My Project\Debt system\Debt system\obj\Debug\Debt system.exe
+D:\All My Project\Debt system\Debt system\obj\Debug\Debt system.pdb
+D:\All My Project\Debt system\Debt system\bin\Debug\Database.mdf
+D:\All My Project\Debt system\Debt system\bin\Debug\Database_log.ldf
+D:\All My Project\Debt system\Debt system\bin\Debug\Debt system.exe
+D:\All My Project\Debt system\Debt system\bin\Debug\Debt system.pdb
+D:\All My Project\Debt system\Debt system\obj\Debug\Debt system.csprojResolveAssemblyReference.cache
+D:\All My Project\Debt system\Debt system\obj\Debug\Debt_system.Form1.resources
+D:\All My Project\Debt system\Debt system\obj\Debug\Debt_system.Properties.Resources.resources
+D:\All My Project\Debt system\Debt system\obj\Debug\Debt_system.system.resources
+D:\All My Project\Debt system\Debt system\obj\Debug\Debt system.csproj.GenerateResource.Cache
+D:\All My Project\Debt system\Debt system\obj\Debug\Debt_system.PaymentForm.resources

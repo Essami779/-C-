@@ -1,0 +1,17 @@
+D:\All My Project\Debt system\Debt system\bin\Release\Debt system.exe.config
+D:\All My Project\Debt system\Debt system\bin\Release\Database.mdf
+D:\All My Project\Debt system\Debt system\bin\Release\Database_log.ldf
+D:\All My Project\Debt system\Debt system\bin\Release\Debt system.exe
+D:\All My Project\Debt system\Debt system\bin\Release\Debt system.pdb
+D:\All My Project\Debt system\Debt system\obj\Release\Debt_system.Form1.resources
+D:\All My Project\Debt system\Debt system\obj\Release\Debt_system.Properties.Resources.resources
+D:\All My Project\Debt system\Debt system\obj\Release\Debt_system.system.resources
+D:\All My Project\Debt system\Debt system\obj\Release\Debt_system.PaymentForm.resources
+D:\All My Project\Debt system\Debt system\obj\Release\Debt system.csproj.GenerateResource.Cache
+D:\All My Project\Debt system\Debt system\obj\Release\Debt system.exe
+D:\All My Project\Debt system\Debt system\obj\Release\Debt system.pdb
+D:\All My Project\Debt system\Debt system\obj\Release\Debt system.csprojResolveAssemblyReference.cache
+D:\All My Project\Debt system\Debt system\bin\Release\Debt system.exe.manifest
+D:\All My Project\Debt system\Debt system\bin\Release\Debt system.application
+D:\All My Project\Debt system\Debt system\obj\Release\Debt system.exe.manifest
+D:\All My Project\Debt system\Debt system\obj\Release\Debt system.application
